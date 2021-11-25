@@ -1,0 +1,1 @@
+Testdaten unterschiedlicher Fahrzeuge. Zum probieren. Etwas dynamischere Sequenzen folgen später.
