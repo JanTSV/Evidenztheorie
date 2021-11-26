@@ -30,3 +30,21 @@ print(m12)
 print("COMBINE 12 & 3")
 m123 = m12.accumulate_measures(m3)
 print(m123)
+
+print("ALL ACCUMULATED (same as m123)")
+print(dh.accumulate_all_measures())
+
+# Plausibility and belief
+print("Plausibility r:", m123.plausibility("r"))
+
+print("\nBelief r: ", m123.belief("r"))
+print("Belief t: ", m123.belief("t"))
+print("Belief f: ", m123.belief("f"))
+
+print("\nBelief - Es was ein Mann: ", m123.belief(["t", "r", "f"]))
+print("belief - Es was eine Frau: ", m123.belief(["s", "u", "e"]))
+
+print("\nPlausibility - Es was ein Mann: ", m123.plausibility(["t", "r", "f"]))
+print("Plausibility - Es was eine Frau: ", m123.plausibility(["s", "u", "e"]))
+
+print("\nZweifel(r): ", m123.doubt("r"))

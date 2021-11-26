@@ -1,4 +1,9 @@
-
+"""
+TODO:
+    * Checks for types.
+    * Beautify / document code.
+    * Unit tests.
+"""
 
 def get_decimals(x: float) -> int:
     return len(str(x).split(".")[1])
@@ -83,6 +88,48 @@ class _MeasureCollector:
                 correction = 1 / (1 - measure.probability)
         return correction
 
+    def doubt(self, key: str):
+        return 1 - self.__plausibility_single(key)
+
+    def plausibility(self, x: list or str):
+        if type(x) is list:
+            return self.__plausibility_multi(x)
+        else:
+            return self.__plausibility_single(x)
+
+    def __plausibility_single(self, key: str):
+        plausibility = 0
+        for measure in self.collection:
+            if key in measure.categories:
+                plausibility += measure.probability
+        return plausibility
+
+    def __plausibility_multi(self, collection: list):
+        plausibility = 0
+        collection = set(collection)
+        for measure in self.collection:
+            if len(collection & set(measure.categories)) > 0:
+                plausibility += measure.probability
+        return plausibility
+    
+    def belief(self, x: list or str):
+        if type(x) is list:
+            return self.__belief_multi(x)
+        else:
+            return self.__belief_single(x)
+
+    def __belief_single(self, key: str):
+        for measure in self.collection:
+            if [key] == measure.categories:
+                return measure.probability
+        return 0
+    
+    def __belief_multi(self, collection: list):
+        belief = 0
+        for key in collection:
+            belief += self.__belief_single(key)
+        return belief
+
     def __str__(self):
         ret = ""
         for measure in self.collection:
@@ -115,6 +162,15 @@ class DempsterHandler:
         mc = _MeasureCollector(measures, self.__get_omega())
         self.measures.append(mc)
         return mc
+
+    def accumulate_all_measures(self):
+        if len(self.measures) < 2:
+            raise Exception("Cannot accumulate less than 2 measure sets.")
+
+        accumulated = self.measures[0]
+        for ix in range(1, len(self.measures)):
+            accumulated = accumulated.accumulate_measures(self.measures[ix])
+        return accumulated
 
     def __str__(self):
         ret = "______________\n"
