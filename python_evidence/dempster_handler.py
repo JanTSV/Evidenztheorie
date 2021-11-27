@@ -1,5 +1,5 @@
 """
-TODO:
+TODO (Fabi):
     * Checks for types.
     * Beautify / document code.
     * Unit tests.
