@@ -52,16 +52,8 @@ def get_velocity(df: pd.DataFrame, dt=0.1):
     df[F"v(km/h)"] = round(df[name] * 3.6, 2)
 
 
-def get_acceleration(df: pd.DataFrame, dt=0.1):
-    df["a(m/s^2)"] = 0.0
-    name = "v(m/s)"
-
-    for index, row in df.iterrows():
-        if index == 0:
-            continue
-        delta_velocity = row[name] - df.iloc[index - 1][name]
-        # print(row[name], df.iloc[index - 1][name], delta_velocity)
-        df.loc[index, F"a(m/s^2)"] = round(delta_velocity / dt, 2)
+def get_acceleration(df: pd.DataFrame, model):
+    df["a(km/h^2)"] = model.deriv()(df["t"])
 
 
 def save_data_dict(data_dict: dict, folder: Path):
