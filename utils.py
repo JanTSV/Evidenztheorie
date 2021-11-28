@@ -35,27 +35,36 @@ def get_velocity(df: pd.DataFrame, dt=0.1):
     Eigengeschwindigkeit
     Abstand
     """
-    df["v(m/s)"] = 0.0
+    name = "v(m/s)"
+    df[name] = 0.0
 
     for index, row in df.iterrows():
         if index == 0:
             continue
         old_distance = df.iloc[index - 1]["Abstand(m)"]
         delta_distance = row["Abstand(m)"] - old_distance
-        df.loc[index, "v(m/s)"] = round(row["Eigengeschwindigkeit(m/s)"] + (delta_distance / dt), 2)
-        
-    df.loc[0, "v(m/s)"] = df.loc[1, "v(m/s)"]
+        own_velocity = (df.iloc[index - 1]["Eigengeschwindigkeit(m/s)"] + row["Eigengeschwindigkeit(m/s)"]) / 2
+        df.loc[index, name] = round(own_velocity + (delta_distance / dt), 2)
+
+    df.loc[0, name] = df.loc[1, name]
 
     # In km/h
-    df["v(km/h)"] = round(df["v(m/s)"] * 3.6, 2)
+    df[F"v(km/h)"] = round(df[name] * 3.6, 2)
 
 
 def get_acceleration(df: pd.DataFrame, dt=0.1):
     df["a(m/s^2)"] = 0.0
+    name = "v(m/s)"
 
     for index, row in df.iterrows():
         if index == 0:
             continue
-        delta_velocity = row["v(m/s)"] - df.iloc[index - 1]["v(m/s)"]
-        print(row["v(m/s)"], df.iloc[index - 1]["v(m/s)"], delta_velocity)
-        df.loc[index, "a(m/s^2)"] = round(delta_velocity / dt, 2)
+        delta_velocity = row[name] - df.iloc[index - 1][name]
+        # print(row[name], df.iloc[index - 1][name], delta_velocity)
+        df.loc[index, F"a(m/s^2)"] = round(delta_velocity / dt, 2)
+
+
+def save_data_dict(data_dict: dict, folder: Path):
+    for path, df in data_dict.items():
+        p = folder.joinpath(F"{path}.csv")
+        df.to_csv(p, sep=";")
