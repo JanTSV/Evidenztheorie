@@ -10,17 +10,21 @@ def get_decimals(x: float) -> int:
 
 
 class Measure:
+    """represents a Measure"""
     categories = None
     probability = 0
 
     def __init__(self, categories: list, probability: float):
+        """initialize measure, using the categories and the corresponding probability """
         self.categories = categories
         self.probability = probability
 
     def __str__(self):
+        """return string, which contains both attributes of the measure"""
         return F"{self.categories}, {self.probability}"
 
     def __eq__(self, other):
+        """check if given measure is the same as this measure"""
         if type(other) is not Measure:
             return False
 
@@ -28,16 +32,19 @@ class Measure:
 
 
 class _MeasureCollector:
+    """collects measures in list"""
     collection = []
 
     def __init__(self, collection: list, omega: list = None):
+        """initialize measure collector, using the collection list and omega"""
         self.collection = collection
 
         # Add omega
         if omega is not None:
             self.add_omega(omega)
 
-    def add_omega(self, omega):
+    def add_omega(self, omega: list):
+        """add omega to measure collector"""
         p_omega = 1
 
         for measure in self.collection:
@@ -50,6 +57,7 @@ class _MeasureCollector:
         self.collection.append(Measure(omega, p_omega))
 
     def accumulate_measures(self, other):
+        """accumulate measures of a given measure collector and the own ones"""
         if type(other) is not _MeasureCollector:
             raise Exception("Other has to be the same type!")
         
@@ -57,8 +65,7 @@ class _MeasureCollector:
         for own_measure in self.collection:
             for other_measure in other.collection:
                 m = Measure(list(set(own_measure.categories) & set(other_measure.categories)),
-                            own_measure.probability * other_measure.probability    
-                           )
+                            own_measure.probability * other_measure.probability)
                 if m not in combined:
                     combined.append(m)
                 else:
@@ -75,6 +82,7 @@ class _MeasureCollector:
         return _MeasureCollector(combined)
 
     def correct(self, collection: list, correction: float):
+        """correct all measure's probability within a collection by a given float value"""
         for measure in collection:
             if measure.categories == []:
                 measure.probability = 0
@@ -144,33 +152,37 @@ class DempsterHandler:
     measures = []
 
     def __init__(self):
-       pass
+        """initialize Dempster handler"""
+        pass
     
     def __get_omega(self):
         return self.omega.copy()
 
     def add_categories(self, categories: list):
+        """add new list of categories to dempster handler"""
         self.categories = categories
         self.omega = self.categories.copy()
 
     def add_measure(self, measures: list):
+        """add new list of measures to dempster handler"""
         # test if all categories in measure defined.
         for measure in measures:
             assert all(category in self.categories for category in measure.categories), "Category not defined!"
 
         # add measure collections
-        mc = _MeasureCollector(measures, self.__get_omega())
-        self.measures.append(mc)
-        return mc
+        measure_collector = _MeasureCollector(measures, self.__get_omega())
+        self.measures.append(measure_collector)
+        return measure_collector
 
     def accumulate_all_measures(self):
+        """accumulate all measures and return them"""
         if len(self.measures) < 2:
-            raise Exception("Cannot accumulate less than 2 measure sets.")
+            raise Exception("Cannot accumulate less than two measure sets.")
 
-        accumulated = self.measures[0]
+        accumulated_measures = self.measures[0]
         for ix in range(1, len(self.measures)):
-            accumulated = accumulated.accumulate_measures(self.measures[ix])
-        return accumulated
+            accumulated_measures = accumulated_measures.accumulate_measures(self.measures[ix])
+        return accumulated_measures
 
     def __str__(self):
         ret = "______________\n"
