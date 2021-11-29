@@ -90,6 +90,7 @@ class _MeasureCollector:
                 measure.probability *= correction
 
     def check_correction(self, collection: list):
+        """calculate correction for given collection of measures"""
         correction = -1
         for measure in collection:
             if measure.categories == []:
@@ -97,15 +98,18 @@ class _MeasureCollector:
         return correction
 
     def doubt(self, key: str):
+        """calculate doubt"""
         return 1 - self.__plausibility_single(key)
 
     def plausibility(self, x: list or str):
+        """call correct method to calculate plausibility of single or several measures"""
         if type(x) is list:
             return self.__plausibility_multi(x)
         else:
             return self.__plausibility_single(x)
 
     def __plausibility_single(self, key: str):
+        """calculate plausibility of single measure"""
         plausibility = 0
         for measure in self.collection:
             if key in measure.categories:
@@ -113,6 +117,7 @@ class _MeasureCollector:
         return plausibility
 
     def __plausibility_multi(self, collection: list):
+        """calculate plausibility of multiple measures"""
         plausibility = 0
         collection = set(collection)
         for measure in self.collection:
@@ -121,32 +126,37 @@ class _MeasureCollector:
         return plausibility
     
     def belief(self, x: list or str):
+        """call correct method to calculate belief of single or multiple measures"""
         if type(x) is list:
             return self.__belief_multi(x)
         else:
             return self.__belief_single(x)
 
     def __belief_single(self, key: str):
+        """calculate belief of single measure"""
         for measure in self.collection:
             if [key] == measure.categories:
                 return measure.probability
         return 0
     
     def __belief_multi(self, collection: list):
+        """calculate belief of multiple measures"""
         belief = 0
         for key in collection:
             belief += self.__belief_single(key)
         return belief
 
     def __str__(self):
-        ret = ""
+        """return formatted string, containing information about all measures of the collection"""
+        return_string = ""
         for measure in self.collection:
-            ret += str(measure)
-            ret += "\n"
-        return ret
+            return_string += str(measure)
+            return_string += "\n"
+        return return_string
 
 
 class DempsterHandler:
+    """manages all categories, measures and the set of alternatives 'omega'"""
     categories = None
     omega = None
     measures = []
@@ -156,6 +166,7 @@ class DempsterHandler:
         pass
     
     def __get_omega(self):
+        """returns copy of omega"""
         return self.omega.copy()
 
     def add_categories(self, categories: list):
@@ -185,6 +196,7 @@ class DempsterHandler:
         return accumulated_measures
 
     def __str__(self):
+        """returns formatted string, containing all measures"""
         ret = "______________\n"
         for measure_collection in self.measures:
             ret += str(measure_collection)
