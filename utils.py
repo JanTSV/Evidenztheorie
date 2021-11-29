@@ -60,3 +60,8 @@ def save_data_dict(data_dict: dict, folder: Path):
     for path, df in data_dict.items():
         p = folder.joinpath(F"{path}.csv")
         df.to_csv(p, sep=";")
+
+
+def get_dimensions(df: pd.DataFrame):
+    df["width"] = (df["Abstand(m)"] + (df["Bbox_Breite"] / 2)) / 100
+    df["height"] = (df["Abstand(m)"] + (df["Bbox_Höhe"] / 2)) / 100

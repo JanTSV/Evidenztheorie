@@ -1,4 +1,4 @@
-from python_evidence.dempster_handler import DempsterHandler, Measure, _MeasureCollector
+from python_evidence.dempster_handler import DempsterHandler, Measure, MeasureCollector
 
 """
 GOOD

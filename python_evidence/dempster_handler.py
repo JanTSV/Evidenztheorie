@@ -31,7 +31,7 @@ class Measure:
         return self.categories == other.categories
 
 
-class _MeasureCollector:
+class MeasureCollector:
     """collects measures in list"""
     collection = []
 
@@ -56,9 +56,9 @@ class _MeasureCollector:
         
         self.collection.append(Measure(omega, p_omega))
 
-    def accumulate_measures(self, other):
+    def accumulate_measures(self, other, correction=True):
         """accumulate measures of a given measure collector and the own ones"""
-        if type(other) is not _MeasureCollector:
+        if type(other) is not MeasureCollector:
             raise Exception("Other has to be the same type!")
         
         combined = []
@@ -74,12 +74,14 @@ class _MeasureCollector:
                             measure.probability += m.probability
         
         # Check if correction is needed.
-        correction = self.check_correction(combined)
-        if correction != -1:
-            print("Correcting with ", correction)
-            self.correct(combined, correction)
+        if (correction):
+            correction = self.check_correction(combined)
+            if correction != -1:
+                print("Correcting with ", correction)
+                self.correct(combined, correction)
 
-        return _MeasureCollector(combined)
+        return MeasureCollector(combined)
+
 
     def correct(self, collection: list, correction: float):
         """correct all measure's probability within a collection by a given float value"""
@@ -177,11 +179,12 @@ class DempsterHandler:
     def add_measure(self, measures: list):
         """add new list of measures to dempster handler"""
         # test if all categories in measure defined.
+        self.__allow_acumulate = True
         for measure in measures:
             assert all(category in self.categories for category in measure.categories), "Category not defined!"
 
         # add measure collections
-        measure_collector = _MeasureCollector(measures, self.__get_omega())
+        measure_collector = MeasureCollector(measures, self.__get_omega())
         self.measures.append(measure_collector)
         return measure_collector
 
@@ -190,9 +193,11 @@ class DempsterHandler:
         if len(self.measures) < 2:
             raise Exception("Cannot accumulate less than two measure sets.")
 
-        accumulated_measures = self.measures[0]
-        for ix in range(1, len(self.measures)):
-            accumulated_measures = accumulated_measures.accumulate_measures(self.measures[ix])
+        measures = self.measures.copy()
+        accumulated_measures = measures[0]
+        for ix in range(1, len(measures)):
+            accumulated_measures = accumulated_measures.accumulate_measures(measures[ix])
+        
         return accumulated_measures
 
     def __str__(self):
