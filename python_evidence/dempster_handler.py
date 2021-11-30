@@ -190,9 +190,6 @@ class DempsterHandler:
 
     def accumulate_all_measures(self):
         """accumulate all measures and return them"""
-        if len(self.measures) < 2:
-            raise Exception("Cannot accumulate less than two measure sets.")
-
         measures = self.measures.copy()
         accumulated_measures = measures[0]
         for ix in range(1, len(measures)):
