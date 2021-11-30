@@ -5,6 +5,7 @@ TODO (Fabi):
     * Unit tests.
 """
 
+
 def get_decimals(x: float) -> int:
     return len(str(x).split(".")[1])
 
@@ -29,6 +30,9 @@ class Measure:
             return False
 
         return self.categories == other.categories
+
+    def __del__(self):
+        del self.categories
 
 
 class MeasureCollector:
@@ -156,6 +160,11 @@ class MeasureCollector:
             return_string += "\n"
         return return_string
 
+    def __del__(self):
+        for measure in self.collection:
+            del measure
+        del self.collection
+
 
 class DempsterHandler:
     """manages all categories, measures and the set of alternatives 'omega'"""
@@ -165,7 +174,7 @@ class DempsterHandler:
 
     def __init__(self):
         """initialize Dempster handler"""
-        pass
+        self.clear()
     
     def __get_omega(self):
         """returns copy of omega"""
@@ -179,11 +188,10 @@ class DempsterHandler:
     def add_measure(self, measures: list):
         """add new list of measures to dempster handler"""
         # test if all categories in measure defined.
-        self.__allow_acumulate = True
         for measure in measures:
             assert all(category in self.categories for category in measure.categories), "Category not defined!"
 
-        # add measure collections
+        # add measure to collected_measures
         measure_collector = MeasureCollector(measures, self.__get_omega())
         self.measures.append(measure_collector)
         return measure_collector
@@ -204,3 +212,11 @@ class DempsterHandler:
             ret += str(measure_collection)
             ret += "\n______________\n\n"
         return ret
+    
+    def __del__(self):
+        for measure_collector in self.measures:
+            del measure_collector
+        del self.categories
+
+    def clear(self):
+        self.measures = []
