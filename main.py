@@ -1,4 +1,4 @@
-from python_evidence.dempster_handler_2 import DempsterHandler, Measure
+from python_evidence.dempster_handler import DempsterHandler, Measure
 
 dh = DempsterHandler(["t", "r", "s", "u", "e", "f"])
 

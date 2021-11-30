@@ -1,9 +1,3 @@
-"""
-TODO (Fabi):
-    * Checks for types.
-    * Beautify / document code.
-    * Unit tests.
-"""
 
 
 def get_decimals(x: float) -> int:
@@ -11,15 +5,13 @@ def get_decimals(x: float) -> int:
 
 
 class Measure:
-    """represents a Measure"""
     categories = None
     probability = 0
 
-    def __init__(self, categories: list, probability: float):
-        """initialize measure, using the categories and the corresponding probability """
+    def __init__(self, categories, probability):
         self.categories = categories
         self.probability = probability
-
+    
     def __str__(self):
         """return string, which contains both attributes of the measure"""
         return F"{self.categories}, {self.probability}"
@@ -31,63 +23,79 @@ class Measure:
 
         return self.categories == other.categories
 
-    def __del__(self):
-        del self.categories
+    def copy(self):
+        return Measure(self.categories, self.probability)
 
 
-class MeasureCollector:
-    """collects measures in list"""
-    collection = []
+class DempsterHandler:
+    _all_categories = None
+    all_measures = []
 
-    def __init__(self, collection: list, omega: list = None):
-        """initialize measure collector, using the collection list and omega"""
-        self.collection = collection
+    def __init__(self, categories):
+        self.clear()
+        self._all_categories = categories
+    
+    def __get_omega(self):
+        return self._all_categories.copy()
 
-        # Add omega
-        if omega is not None:
-            self.add_omega(omega)
+    def categories(self):
+        return self._all_categories.copy()
 
-    def add_omega(self, omega: list):
-        """add omega to measure collector"""
+    def __calculate_omega(self, measures):
+        omega = self.__get_omega()
         p_omega = 1
 
-        for measure in self.collection:
+        for measure in measures:
             p_omega -= measure.probability
             p_omega = round(p_omega, get_decimals(measure.probability))
             
         if p_omega < 0.0:
             raise Exception("Defined categories have a to high probability in sum!")
-        
-        self.collection.append(Measure(omega, p_omega))
 
-    def accumulate_measures(self, other, correction=True):
-        """accumulate measures of a given measure collector and the own ones"""
-        if type(other) is not MeasureCollector:
-            raise Exception("Other has to be the same type!")
-        
-        combined = []
-        for own_measure in self.collection:
-            for other_measure in other.collection:
-                m = Measure(list(set(own_measure.categories) & set(other_measure.categories)),
-                            own_measure.probability * other_measure.probability)
-                if m not in combined:
-                    combined.append(m)
+        return Measure(omega, p_omega)
+
+    def add_measure(self, measures: list):
+        measure_copy = self.__copy_measures(measures) 
+        measure_copy.append(self.__calculate_omega(measures))
+
+        self.all_measures.append(measure_copy)
+
+    def __copy_measures(self, measures):
+        measure_copy = []
+        for measure in measures:
+            measure_copy.append(measure.copy())
+        return measure_copy
+
+    def accumulate(self):
+        accumulated = self.__accumulate(self.__copy_measures(self.all_measures))
+        correction =  self.__check_correction(accumulated)
+        if correction is not None:
+            print("Correcting with ", correction)
+            self.__correct(accumulated, correction)
+        return accumulated
+
+    def __accumulate(self, measures):
+        while len(measures) > 1:
+            accumulated = self.__accumulate_two(measures[0], measures[1])   
+            measures.pop(0)
+            measures.pop(0)
+            measures.insert(0, accumulated)
+        return measures[0]
+
+    def __accumulate_two(self, collection_a, collection_b):
+        accumulated = []
+        for a in collection_a:
+            for b in collection_b:
+                m = Measure(list(set(a.categories) & set(b.categories)), a.probability * b.probability)
+                if m not in accumulated:
+                    accumulated.append(m)
                 else:
-                    for measure in combined:
+                    for measure in accumulated:
                         if measure == m:
                             measure.probability += m.probability
-        
-        # Check if correction is needed.
-        if (correction):
-            correction = self.check_correction(combined)
-            if correction != -1:
-                print("Correcting with ", correction)
-                self.correct(combined, correction)
+        return accumulated
 
-        return MeasureCollector(combined)
-
-
-    def correct(self, collection: list, correction: float):
+    def __correct(self, collection: list, correction: float):
         """correct all measure's probability within a collection by a given float value"""
         for measure in collection:
             if measure.categories == []:
@@ -95,128 +103,82 @@ class MeasureCollector:
             else:
                 measure.probability *= correction
 
-    def check_correction(self, collection: list):
+    def __check_correction(self, collection: list):
         """calculate correction for given collection of measures"""
-        correction = -1
+        correction = None
         for measure in collection:
             if measure.categories == []:
                 correction = 1 / (1 - measure.probability)
         return correction
 
-    def doubt(self, key: str):
-        """calculate doubt"""
-        return 1 - self.__plausibility_single(key)
+    def print(self, measures: list):
+        if len(measures) > 0 and (type(measures[0]) is not list):
+            measures = [measures]
+        print(self.__stingify(measures))
 
-    def plausibility(self, x: list or str):
+    def plausibility(self, accumulated: list, x: list or str):
         """call correct method to calculate plausibility of single or several measures"""
         if type(x) is list:
-            return self.__plausibility_multi(x)
+            return self.__plausibility_multi(accumulated, x)
         else:
-            return self.__plausibility_single(x)
+            return self.__plausibility_single(accumulated, x)
 
-    def __plausibility_single(self, key: str):
+    def __plausibility_single(self, accumulated: list, key: str):
         """calculate plausibility of single measure"""
         plausibility = 0
-        for measure in self.collection:
+        for measure in accumulated:
             if key in measure.categories:
                 plausibility += measure.probability
         return plausibility
 
-    def __plausibility_multi(self, collection: list):
+    def __plausibility_multi(self, accumulated: list, collection: list):
         """calculate plausibility of multiple measures"""
         plausibility = 0
         collection = set(collection)
-        for measure in self.collection:
+        for measure in accumulated:
             if len(collection & set(measure.categories)) > 0:
                 plausibility += measure.probability
         return plausibility
     
-    def belief(self, x: list or str):
+    def belief(self, accumulated: list, x: list or str):
         """call correct method to calculate belief of single or multiple measures"""
         if type(x) is list:
-            return self.__belief_multi(x)
+            return self.__belief_multi(accumulated, x)
         else:
-            return self.__belief_single(x)
+            return self.__belief_single(accumulated, x)
 
-    def __belief_single(self, key: str):
+    def __belief_single(self, accumulated: list, key: str):
         """calculate belief of single measure"""
-        for measure in self.collection:
+        for measure in accumulated:
             if [key] == measure.categories:
                 return measure.probability
         return 0
     
-    def __belief_multi(self, collection: list):
+    def __belief_multi(self, accumulated: list, collection: list):
         """calculate belief of multiple measures"""
         belief = 0
         for key in collection:
-            belief += self.__belief_single(key)
+            belief += self.__belief_single(accumulated, key)
         return belief
 
-    def __str__(self):
-        """return formatted string, containing information about all measures of the collection"""
-        return_string = ""
-        for measure in self.collection:
-            return_string += str(measure)
-            return_string += "\n"
-        return return_string
+    def doubt(self, accumulated: list, key: str):
+        """calculate doubt"""
+        return 1 - self.__plausibility_single(accumulated, key)
 
-    def __del__(self):
-        for measure in self.collection:
-            del measure
-        del self.collection
-
-
-class DempsterHandler:
-    """manages all categories, measures and the set of alternatives 'omega'"""
-    categories = None
-    omega = None
-    measures = []
-
-    def __init__(self):
-        """initialize Dempster handler"""
-        self.clear()
-    
-    def __get_omega(self):
-        """returns copy of omega"""
-        return self.omega.copy()
-
-    def add_categories(self, categories: list):
-        """add new list of categories to dempster handler"""
-        self.categories = categories
-        self.omega = self.categories.copy()
-
-    def add_measure(self, measures: list):
-        """add new list of measures to dempster handler"""
-        # test if all categories in measure defined.
-        for measure in measures:
-            assert all(category in self.categories for category in measure.categories), "Category not defined!"
-
-        # add measure to collected_measures
-        measure_collector = MeasureCollector(measures, self.__get_omega())
-        self.measures.append(measure_collector)
-        return measure_collector
-
-    def accumulate_all_measures(self):
-        """accumulate all measures and return them"""
-        measures = self.measures.copy()
-        accumulated_measures = measures[0]
-        for ix in range(1, len(measures)):
-            accumulated_measures = accumulated_measures.accumulate_measures(measures[ix])
-        
-        return accumulated_measures
-
-    def __str__(self):
-        """returns formatted string, containing all measures"""
-        ret = "______________\n"
-        for measure_collection in self.measures:
-            ret += str(measure_collection)
-            ret += "\n______________\n\n"
+    def __stingify(self, measures: list):
+        ret = "--------------------------------\n"
+        for measure_coll in measures:
+            ret += "++\n"
+            for measure in measure_coll:
+                ret += str(measure) + "\n"
+            ret += "++\n\n"
+        ret += "-------------------------------- \n\n"
         return ret
     
-    def __del__(self):
-        for measure_collector in self.measures:
-            del measure_collector
-        del self.categories
-
     def clear(self):
-        self.measures = []
+        self.all_measures = []
+
+    def __str__(self):
+        return self.__stingify(self.all_measures)
+        
+        
