@@ -193,3 +193,45 @@ def get_acceleration_limit(data_dict: dict, limit: float):
             all_accelerations.append(abs(acc))
     # return the requested percentile
     return np.percentile(sorted(all_accelerations), [limit*100])[0]
+
+
+def calculate_weighted_ratio(heights, widths, distances) -> float:
+    """
+    Calculate mean ratio of height and width with weighing in distances.
+    Method:
+        * < 33%     -> 0.5
+        * 33% < 66% -> 0.3
+        * > 66%     -> 0.2
+        
+    
+    Args:
+        heights: Heights.
+        Widths: Widths.
+        distances: Distances.
+        
+    Returns:
+        float: Wighted ratio.
+    """
+    
+    # Percentiles of distances
+    lower, upper = np.percentile(sorted(distances), [33, 66])
+    
+    # lower, middle, high distances
+    weighted_widths = [[], [], []]
+    weighted_heights = [[], [], []]
+    for ix, distance in enumerate(distances):
+        if distance < lower:
+            weighted_widths[0].append(widths.iloc[ix])
+            weighted_heights[0].append(heights.iloc[ix])
+        elif distance > lower and distance < upper:
+            weighted_widths[1].append(widths.iloc[ix])
+            weighted_heights[1].append(heights.iloc[ix])
+        else:
+            weighted_widths[2].append(widths.iloc[ix])
+            weighted_heights[2].append(heights.iloc[ix])
+            
+    width = np.mean(weighted_widths[0]) * 0.5 + np.mean(weighted_widths[1]) * 0.3 + np.mean(weighted_widths[2]) * 0.2
+    height = np.mean(weighted_heights[0]) * 0.5 + np.mean(weighted_heights[1]) * 0.3 + np.mean(weighted_heights[2]) * 0.2
+    return height / width
+    
+        

@@ -125,8 +125,10 @@ class DempsterHandler:
             measures (list): List of measures.
         """
         # Check if all given categories exist.
-        if not all([measure in self._all_categories for measure in measures]):
-            raise KeyError(F"Not all given categories are defined in th is handler.")
+        for measure in measures:
+            for category in measure.categories:
+                if category not in self._all_categories:
+                    raise KeyError(F"Category {category} is not defined in dempster handler.")
 
         measure_copy = self.__copy_measures(measures) 
         measure_copy.append(self.__calculate_omega(measures))
