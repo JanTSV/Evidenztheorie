@@ -29,6 +29,7 @@ Folgende Kategorien werden unterschieden: <br>
 Folgende Dateien / Projekte sind enstanden:
 * [python_evidence](/python_evidence): Framework für Evidenztheorie.
 * [test.py](test.py): Systemtest des Frameoworks anhand eines Beispiels aus der Vorlesung.
+* [utils.py](utils.py): Hauptdatei für Sensordaten-Berechnungen.
 * [main.ipynb](main.ipynb): Hauptdatei des Projekts. 
 
 Um die gewünschten Datei ausführen zu können, müssen alle verwendeten Frameworks installiert werden:
