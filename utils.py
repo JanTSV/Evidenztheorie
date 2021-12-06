@@ -72,46 +72,30 @@ def change_data(data_dict: dict):
 
 def get_velocity(df: pd.DataFrame):
     """
-    Calculate velocity in m/s and km/h of vehicle measured by sensors.
+    Calculate velocity in km/h of vehicle measured by sensors.
     The following method is applied:
-        1. Calculate the delta of distance between timestamp t1 and t0.
-        2. Calculate the mean of the own velocity over t0 and t1.
-        3. Calculate dt = t1 - t0
-        4. Velocity = Own Velocity + (Distance delta / dt)
+        1. Derive distance over time -> distance_model.
+        2. Calculate velocity_model with distance_model and "Eigengeschwindigkeit(m/s)"
+        
+    Notice:
+        If own vehicle accelerates more, float(np.mean(df["Eigengeschwindigkeit(m/s)"])) has to be updated.
         
     Args:
         df : Dataframe with sensor data.
     """
-    name = "v(m/s)"
-    df[name] = 0.0
-    
-    # Check if dataframe is correct
-    check_dataframe(df, ["Abstand(m)", "Eigengeschwindigkeit(m/s)", "t"])
+    velocity_key = "v(km/h)"
+    distance_model = np.poly1d(np.polyfit(df["t"], df["Abstand(m)"], 3))
 
+    df[velocity_key] = distance_model.deriv()(df["t"].copy())
+    # Optimize calculated velocity, as it is scattered
+    velocity_model = np.poly1d(np.polyfit(df["t"].copy(), df[velocity_key], 3))
+    own_velocity = float(np.mean(df["Eigengeschwindigkeit(m/s)"]))
     for index, row in df.iterrows():
-        # Skip first row
-        if index == 0:
-            continue
-            
-        # Distance delta
-        old_distance = df.iloc[index - 1]["Abstand(m)"]
-        delta_distance = row["Abstand(m)"] - old_distance
+        df.loc[index, velocity_key] += own_velocity
+        df.loc[index, velocity_key] = df[velocity_key][index] * 3.6
         
-        # Velocity mean
-        own_velocity = (df.iloc[index - 1]["Eigengeschwindigkeit(m/s)"] + row["Eigengeschwindigkeit(m/s)"]) / 2
-        
-        # dt
-        dt = row["t"] - df.iloc[index - 1]["t"]
-        
-        # Velocity of other vehicle.
-        df.loc[index, name] = round(own_velocity + (delta_distance / dt), 2)
+    return velocity_model, distance_model
     
-    # Set velocity on first index to second one
-    df.loc[0, name] = df.loc[1, name]
-
-    # To km/h
-    df[F"v(km/h)"] = round(df[name] * 3.6, 2)
-
 
 def get_acceleration(df: pd.DataFrame, model):
     """
@@ -179,14 +163,7 @@ def get_acceleration_limit(data_dict: dict, limit: float):
     all_accelerations = []
     for _, df in data_dict.items():
         df_a = df["a(km/h^2)"]
-        lower_limit = 0
-        upper_limit = len(df_a)
-        # check if distance between vehicles decreases and adjust limit
-        if df["Abstand(m)"].iloc[0] < df["Abstand(m)"].iloc[1]:
-            upper_limit -= 10
-        else:
-            lower_limit = 10
-        for acc in df_a.iloc[lower_limit:upper_limit]:
+        for acc in df_a.iloc[:]:
             if acc > 85:
                 print(_)
             # append absolute value of acceleration to acceleration list
