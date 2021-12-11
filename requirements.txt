@@ -61,6 +61,7 @@ pyzmq==22.3.0
 qtconsole==5.2.1
 QtPy==1.11.2
 scipy==1.7.3
+seaborn==0.11.2
 Send2Trash==1.8.0
 setuptools-scm==6.3.2
 six==1.16.0
